@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Settings, User } from "lucide-react";
 import { useSupabase } from "@/providers/supabase-provider";
 
@@ -18,18 +18,25 @@ export function UserMenu() {
   const { user } = useAuth();
   const supabase = useSupabase();
 
-  if (!user) return null;
+  if (!user?.email) return null;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
+
+  const initials = user.email
+    .split('@')[0]
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="bg-primary/10">
+              {initials}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
