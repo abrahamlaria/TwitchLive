@@ -92,4 +92,56 @@ export async function getTopStreams(limit = 9) {
   }
 }
 
-// Rest of the file remains the same...
+export async function getStreamerInfo(userId: string) {
+  try {
+    const accessToken = await getAppAccessToken();
+    const clientId = process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID;
+    
+    if (!clientId) {
+      throw new Error('Missing Twitch client ID');
+    }
+    
+    const response = await fetch(`${TWITCH_API_URL}/users?id=${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Client-Id': clientId,
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch streamer info');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error in getStreamerInfo:', error);
+    throw error;
+  }
+}
+
+export async function getStreamStatus(userId: string) {
+  try {
+    const accessToken = await getAppAccessToken();
+    const clientId = process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID;
+    
+    if (!clientId) {
+      throw new Error('Missing Twitch client ID');
+    }
+    
+    const response = await fetch(`${TWITCH_API_URL}/streams?user_id=${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Client-Id': clientId,
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch stream status');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error in getStreamStatus:', error);
+    throw error;
+  }
+}
