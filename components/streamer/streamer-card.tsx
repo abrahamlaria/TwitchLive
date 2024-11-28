@@ -24,13 +24,13 @@ export function StreamerCard({ streamer }: StreamerCardProps) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium leading-none truncate">{streamer.username}</div>
-        {streamer.isLive && (
+        {streamer.isLive && streamer.currentGame && (
           <div className="mt-1.5 text-xs text-muted-foreground truncate">
             {streamer.currentGame}
           </div>
         )}
       </div>
-      {streamer.isLive && (
+      {streamer.isLive && streamer.viewerCount !== undefined && (
         <Badge variant="secondary" className="ml-auto flex-shrink-0">
           {streamer.viewerCount.toLocaleString()}
         </Badge>

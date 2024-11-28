@@ -17,16 +17,20 @@ export async function GET(request: Request) {
       
       const { error } = await supabase.auth.verifyOtp({
         token_hash: token,
-        type: 'signup'
+        type: 'signup',
+        options: {
+          redirectTo: '/'
+        }
       });
 
       if (error) {
+        console.error('Verification error:', error);
         return NextResponse.redirect(
-          new URL(`/auth/error?error=${error.message}`, request.url)
+          new URL(`/?error=${encodeURIComponent(error.message)}`, requestUrl.origin)
         );
       }
 
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/', requestUrl.origin));
     }
 
     if (code) {
@@ -35,11 +39,11 @@ export async function GET(request: Request) {
       await supabase.auth.exchangeCodeForSession(code);
     }
 
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/', requestUrl.origin));
   } catch (error) {
     console.error('Auth callback error:', error);
     return NextResponse.redirect(
-      new URL('/auth/error', request.url)
+      new URL('/?error=auth_callback_error', requestUrl.origin)
     );
   }
 }
