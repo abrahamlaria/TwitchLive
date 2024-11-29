@@ -3,8 +3,8 @@ export interface StreamerInfo {
   username: string;
   avatarUrl: string;
   isLive: boolean;
-  currentGame?: string;
-  viewerCount?: number;
+  currentGame?: string | null;
+  viewerCount?: number | null;
 }
 
 export interface Stream {
@@ -16,3 +16,6 @@ export interface Stream {
   viewerCount: number;
   tags: string[];
 }
+
+// Remove the old Streamer type and use StreamerInfo consistently
+export type Streamer = StreamerInfo;

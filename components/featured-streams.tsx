@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getTopStreams } from '@/lib/twitch';
 import type { Stream } from '@/types/streamer';
+import Image from 'next/image';
 
 export function FeaturedStreams() {
   const { isAuthenticated } = useAuth();
@@ -15,24 +16,32 @@ export function FeaturedStreams() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     async function fetchTopStreams() {
       try {
         const data = await getTopStreams();
-        if (Array.isArray(data)) {
+        if (mounted) {
           setStreams(data);
           setError(null);
-        } else {
-          setError('Invalid data format received');
         }
       } catch (error) {
         console.error('Failed to fetch top streams:', error);
-        setError('Failed to load streams');
+        if (mounted) {
+          setError('Failed to load streams');
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchTopStreams();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -66,11 +75,16 @@ export function FeaturedStreams() {
         {streams.map((stream) => (
           <Card key={stream.id} className="overflow-hidden">
             <div className="aspect-video relative">
-              <img
-                src={stream.thumbnailUrl}
-                alt={stream.title}
-                className="object-cover w-full h-full"
-              />
+              {stream.thumbnailUrl && (
+                <Image
+                  src={stream.thumbnailUrl}
+                  alt={stream.title}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  priority={true}
+                />
+              )}
               <div className="absolute bottom-3 left-3 bg-red-600 px-2 py-1 rounded text-xs font-medium text-white">
                 LIVE
               </div>

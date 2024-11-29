@@ -5,7 +5,7 @@ const nextConfig = {
   },
   images: { 
     unoptimized: true,
-    domains: ['images.unsplash.com', 'static-cdn.jtvnw.net']
+    domains: ['static-cdn.jtvnw.net']
   }
 };
 

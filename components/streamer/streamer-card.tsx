@@ -1,10 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Streamer } from '@/lib/types';
+import type { StreamerInfo } from '@/types/streamer';
 
 interface StreamerCardProps {
-  streamer: Streamer;
+  streamer: StreamerInfo;
 }
 
 export function StreamerCard({ streamer }: StreamerCardProps) {
@@ -32,7 +32,7 @@ export function StreamerCard({ streamer }: StreamerCardProps) {
       </div>
       {streamer.isLive && streamer.viewerCount !== undefined && (
         <Badge variant="secondary" className="ml-auto flex-shrink-0">
-          {streamer.viewerCount.toLocaleString()}
+          {streamer.viewerCount?.toLocaleString()}
         </Badge>
       )}
     </div>
