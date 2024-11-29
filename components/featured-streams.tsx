@@ -12,14 +12,21 @@ export function FeaturedStreams() {
   const { isAuthenticated } = useAuth();
   const [streams, setStreams] = useState<Stream[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchTopStreams() {
       try {
         const data = await getTopStreams();
-        setStreams(data);
+        if (Array.isArray(data)) {
+          setStreams(data);
+          setError(null);
+        } else {
+          setError('Invalid data format received');
+        }
       } catch (error) {
         console.error('Failed to fetch top streams:', error);
+        setError('Failed to load streams');
       } finally {
         setLoading(false);
       }
@@ -32,6 +39,22 @@ export function FeaturedStreams() {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  if (!streams.length) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">No streams available</p>
       </div>
     );
   }
@@ -51,10 +74,12 @@ export function FeaturedStreams() {
               <div className="absolute bottom-3 left-3 bg-red-600 px-2 py-1 rounded text-xs font-medium text-white">
                 LIVE
               </div>
-              <div className="absolute bottom-3 right-3 bg-black/75 px-2 py-1 rounded text-xs font-medium text-white">
-                {stream.viewerCount.toLocaleString()} viewers
-              </div>
-              {isAuthenticated && (
+              {typeof stream.viewerCount === 'number' && (
+                <div className="absolute bottom-3 right-3 bg-black/75 px-2 py-1 rounded text-xs font-medium text-white">
+                  {stream.viewerCount.toLocaleString()} viewers
+                </div>
+              )}
+              {isAuthenticated && stream.userId && (
                 <div className="absolute top-3 right-3">
                   <FollowButton streamerId={stream.userId} />
                 </div>
@@ -62,17 +87,21 @@ export function FeaturedStreams() {
             </div>
             <CardContent className="p-4">
               <h3 className="font-semibold truncate">{stream.title}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{stream.game}</p>
-              <div className="flex flex-wrap gap-2 mt-3">
-                {stream.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full text-xs font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {stream.game && (
+                <p className="text-sm text-muted-foreground mt-1">{stream.game}</p>
+              )}
+              {stream.tags && stream.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {stream.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full text-xs font-medium"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
