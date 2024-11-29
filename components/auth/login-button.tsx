@@ -17,7 +17,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function LoginButton() {
+interface LoginButtonProps {
+  children?: React.ReactNode;
+}
+
+export function LoginButton({ children }: LoginButtonProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,7 +99,7 @@ export function LoginButton() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>Sign In</Button>
+        {children || <Button>Sign In</Button>}
       </DialogTrigger>
       <DialogContent className={cn(
         "sm:max-w-[425px] transition-all duration-500",

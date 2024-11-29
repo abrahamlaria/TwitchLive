@@ -9,8 +9,8 @@ interface TwitchCredentials {
 
 export function getTwitchCredentials(): TwitchCredentials {
   const clientId = process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID;
-  const clientSecret = process.env.NEXT_TWITCH_CLIENT_SECRET;
-  
+  const clientSecret = process.env.NEXT_PUBLIC_TWITCH_CLIENT_SECRET;
+
   const hasCredentials = Boolean(clientId && clientSecret);
   
   if (!hasCredentials) {

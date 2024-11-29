@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { FollowButton } from '@/components/streamer/follow-button';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { getTopStreams } from '@/lib/twitch';
+import { getTopStreams } from '@/lib/twitch/api';
 import type { Stream } from '@/types/streamer';
 import Image from 'next/image';
 
 export function FeaturedStreams() {
-  const { isAuthenticated } = useAuth();
   const [streams, setStreams] = useState<Stream[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +91,7 @@ export function FeaturedStreams() {
                   {stream.viewerCount.toLocaleString()} viewers
                 </div>
               )}
-              {isAuthenticated && stream.userId && (
+              {stream.userId && (
                 <div className="absolute top-3 right-3">
                   <FollowButton streamerId={stream.userId} />
                 </div>
