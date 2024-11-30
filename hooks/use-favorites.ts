@@ -17,6 +17,7 @@ export function useFavorites() {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastUpdateRef = useRef<number>(Date.now());
 
   const fetchStreamerData = useCallback(async (streamerId: string): Promise<StreamerInfo | null> => {
     try {
@@ -74,6 +75,7 @@ export function useFavorites() {
         const validStreamers = streamersData.filter((data): data is StreamerInfo => data !== null);
         setFavorites(validStreamers);
         setLoading(false);
+        lastUpdateRef.current = Date.now();
       }
     } catch (error) {
       console.error('Error fetching favorites:', error);
@@ -117,10 +119,13 @@ export function useFavorites() {
 
         if (error) throw error;
       }
+
+      // Force an immediate update of the favorites list
+      fetchFavorites();
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert on error
-      await fetchFavorites();
+      // Revert on error by fetching the current state
+      fetchFavorites();
     }
   }, [user, supabase, fetchStreamerData, favorites, fetchFavorites]);
 
@@ -136,7 +141,7 @@ export function useFavorites() {
     // Initial fetch
     fetchFavorites();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with debounced updates
     const channel = supabase
       .channel(`favorites_${user.id}`)
       .on(
@@ -148,15 +153,17 @@ export function useFavorites() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          // Refresh the favorites list when any change occurs
-          fetchFavorites();
+          // Only update if enough time has passed since the last update
+          const now = Date.now();
+          if (now - lastUpdateRef.current > 500) {
+            fetchFavorites();
+          }
         }
       )
       .subscribe();
 
     channelRef.current = channel;
 
-    // Cleanup
     return () => {
       mountedRef.current = false;
       if (channelRef.current) {
