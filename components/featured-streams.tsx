@@ -104,6 +104,9 @@ export function FeaturedStreams() {
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute top-3 right-3 bg-black/75 px-2 py-1 rounded text-sm font-medium text-white truncate max-w-[200px]">
+                {stream.username}
+              </div>
               <div className="absolute bottom-3 left-3 bg-red-600 px-2 py-1 rounded text-xs font-medium text-white">
                 LIVE
               </div>

@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Users } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { LoginButton } from '@/components/auth/login-button';
 
 interface StreamPageProps {
   params: {
@@ -15,6 +17,7 @@ interface StreamPageProps {
 
 export default function StreamPage({ params }: StreamPageProps) {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
   const [parentDomain, setParentDomain] = useState<string>('');
   const { username } = params;
@@ -55,22 +58,48 @@ export default function StreamPage({ params }: StreamPageProps) {
                 {username}&apos;s Stream
               </h1>
             </div>
-            {/* Make player take full width on mobile */}
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden relative">
-              {loading || !parentDomain ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <iframe
-                  src={`https://player.twitch.tv/?channel=${username}&parent=${parentDomain}`}
-                  height="100%"
-                  width="100%"
-                  allowFullScreen
-                  title={`${username}'s stream`}
-                  className="border-0"
-                />
-              )}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-4">
+              {/* Video Player */}
+              <div className="aspect-video w-full bg-black rounded-lg overflow-hidden relative">
+                {loading || !parentDomain ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <iframe
+                    src={`https://player.twitch.tv/?channel=${username}&parent=${parentDomain}`}
+                    height="100%"
+                    width="100%"
+                    allowFullScreen
+                    title={`${username}'s stream`}
+                    className="border-0"
+                  />
+                )}
+              </div>
+              {/* Chat */}
+              <div className="hidden lg:block h-[calc(100vh-16rem)] bg-black rounded-lg overflow-hidden">
+                {loading || !parentDomain ? (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !isAuthenticated ? (
+                  <div className="h-full flex flex-col items-center justify-center gap-4 p-4">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-center text-sm text-muted-foreground">
+                      Sign in to participate in chat
+                    </p>
+                    <LoginButton />
+                  </div>
+                ) : (
+                  <iframe
+                    src={`https://www.twitch.tv/embed/${username}/chat?parent=${parentDomain}&darkpopout`}
+                    height="100%"
+                    width="100%"
+                    title={`${username}'s chat`}
+                    className="border-0"
+                  />
+                )}
+              </div>
             </div>
           </div>
         </main>

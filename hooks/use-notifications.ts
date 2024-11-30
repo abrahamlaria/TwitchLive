@@ -43,11 +43,10 @@ export function useNotifications() {
 
     // Cleanup old streamers that are no longer in favorites
     const currentIds = new Set(favorites.map(s => s.id));
-    // Convert Map keys to array before iterating
     Array.from(previousStatusRef.current.keys()).forEach(id => {
-      if (!currentIds.has(id)) {
-        previousStatusRef.current.delete(id);
-      }
-    });
+        if (!currentIds.has(id)) {
+          previousStatusRef.current.delete(id);
+        }
+      });
   }, [isAuthenticated, favorites, toast]);
 }

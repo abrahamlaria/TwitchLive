@@ -33,10 +33,10 @@ export function useNotificationIndicator() {
     // Cleanup removed streamers
     const currentIds = new Set(favorites.map(s => s.id));
     Array.from(lastChecked.keys()).forEach(id => {
-      if (!currentIds.has(id)) {
-        lastChecked.delete(id);
-      }
-    });
+        if (!currentIds.has(id)) {
+          lastChecked.delete(id);
+        }
+      });
   }, [isAuthenticated, favorites]);
 
   return {

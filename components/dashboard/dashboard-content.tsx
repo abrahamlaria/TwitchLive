@@ -6,6 +6,12 @@ import { LiveStreams } from '@/components/dashboard/live-streams';
 import { Recommendations } from '@/components/dashboard/recommendations';
 import { RecentStreams } from '@/components/dashboard/recent-streams';
 import { FeaturedStreams } from '@/components/featured-streams';
+import { 
+  Sparkles, 
+  Radio, 
+  Compass, 
+  History 
+} from 'lucide-react';
 
 export function DashboardContent() {
   const [activeTab, setActiveTab] = useState('featured');
@@ -21,10 +27,22 @@ export function DashboardContent() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="featured">Featured</TabsTrigger>
-          <TabsTrigger value="live">Live Now</TabsTrigger>
-          <TabsTrigger value="recommended">For You</TabsTrigger>
-          <TabsTrigger value="recent">Recent</TabsTrigger>
+          <TabsTrigger value="featured" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            <span>Featured Streams</span>
+          </TabsTrigger>
+          <TabsTrigger value="live" className="flex items-center gap-2">
+            <Radio className="h-4 w-4" />
+            <span>Following Live</span>
+          </TabsTrigger>
+          <TabsTrigger value="recommended" className="flex items-center gap-2">
+            <Compass className="h-4 w-4" />
+            <span>Recommended</span>
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            <span>Offline Channels</span>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="featured" className="space-y-4">
           <FeaturedStreams />
