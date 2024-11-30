@@ -17,7 +17,6 @@ export function useFavorites() {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const lastUpdateRef = useRef<number>(Date.now());
 
   const fetchStreamerData = useCallback(async (streamerId: string): Promise<StreamerInfo | null> => {
     try {
@@ -75,7 +74,6 @@ export function useFavorites() {
         const validStreamers = streamersData.filter((data): data is StreamerInfo => data !== null);
         setFavorites(validStreamers);
         setLoading(false);
-        lastUpdateRef.current = Date.now();
       }
     } catch (error) {
       console.error('Error fetching favorites:', error);
@@ -92,39 +90,32 @@ export function useFavorites() {
 
     try {
       if (isCurrentlyFollowing) {
-        // Optimistic update for removal
+        // Immediate optimistic update for removal
         setFavorites(prev => prev.filter(f => f.id !== streamerId));
-        streamerCache.delete(streamerId); // Clear cache for this streamer
+        streamerCache.delete(streamerId);
 
-        const { error } = await supabase
+        await supabase
           .from('favorite_streamers')
           .delete()
           .eq('user_id', user.id)
           .eq('streamer_id', streamerId);
-
-        if (error) throw error;
       } else {
         const streamerData = await fetchStreamerData(streamerId);
         if (!streamerData) throw new Error('Failed to fetch streamer data');
 
-        // Optimistic update for addition
+        // Immediate optimistic update for addition
         setFavorites(prev => [...prev, streamerData]);
 
-        const { error } = await supabase
+        await supabase
           .from('favorite_streamers')
           .insert({
             user_id: user.id,
             streamer_id: streamerId
           });
-
-        if (error) throw error;
       }
-
-      // Force an immediate update of the favorites list
-      fetchFavorites();
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert on error by fetching the current state
+      // Revert optimistic update on error
       fetchFavorites();
     }
   }, [user, supabase, fetchStreamerData, favorites, fetchFavorites]);
@@ -141,7 +132,7 @@ export function useFavorites() {
     // Initial fetch
     fetchFavorites();
 
-    // Set up real-time subscription with debounced updates
+    // Set up real-time subscription
     const channel = supabase
       .channel(`favorites_${user.id}`)
       .on(
@@ -153,11 +144,8 @@ export function useFavorites() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          // Only update if enough time has passed since the last update
-          const now = Date.now();
-          if (now - lastUpdateRef.current > 500) {
-            fetchFavorites();
-          }
+          // Immediate update on database changes
+          fetchFavorites();
         }
       )
       .subscribe();
