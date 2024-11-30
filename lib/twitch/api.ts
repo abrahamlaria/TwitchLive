@@ -1,7 +1,7 @@
 import { TWITCH_API_URL } from './config';
 import { getAppAccessToken } from './auth';
 import { getTwitchClientId } from './config';
-import type { Stream } from '@/types/streamer';
+import type { Stream, StreamerInfo } from '@/types/streamer';
 
 async function getTwitchHeaders() {
   const clientId = getTwitchClientId();
@@ -17,33 +17,36 @@ async function getTwitchHeaders() {
 export async function getTopStreams(limit = 20, cursor?: string | null) {
   try {
     const headers = await getTwitchHeaders();
-    const url = new URL(`${TWITCH_API_URL}/streams`);
-    url.searchParams.append('first', limit.toString());
-    if (cursor) {
-      url.searchParams.append('after', cursor);
-    }
+    const params = new URLSearchParams({
+      first: limit.toString(),
+      ...(cursor ? { after: cursor } : {})
+    });
 
-    const response = await fetch(url.toString(), { headers });
+    const response = await fetch(
+      `${TWITCH_API_URL}/streams?${params}`,
+      { headers }
+    );
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch streams: ${response.statusText}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const { data, pagination } = await response.json();
+    const data = await response.json();
+    
+    const streams: Stream[] = data.data.map((stream: any) => ({
+      id: stream.id,
+      userId: stream.user_id,
+      username: stream.user_login,
+      title: stream.title,
+      thumbnailUrl: stream.thumbnail_url.replace('{width}', '800').replace('{height}', '450'),
+      game: stream.game_name,
+      viewerCount: stream.viewer_count,
+      tags: stream.tags || []
+    }));
 
     return {
-      streams: data.map((stream: any): Stream => ({
-        id: stream.id,
-        userId: stream.user_id,
-        username: stream.user_login,
-        title: stream.title || 'Untitled Stream',
-        game: stream.game_name || 'Unknown Game',
-        thumbnailUrl: stream.thumbnail_url
-          .replace('{width}', '800')
-          .replace('{height}', '450'),
-        viewerCount: stream.viewer_count || 0,
-        tags: stream.tags || [],
-      })),
-      cursor: pagination?.cursor || null,
+      streams,
+      cursor: data.pagination.cursor
     };
   } catch (error) {
     console.error('Error in getTopStreams:', error);
@@ -51,49 +54,80 @@ export async function getTopStreams(limit = 20, cursor?: string | null) {
   }
 }
 
-export async function getStreamerInfo(userId: string) {
+export async function searchStreams(query: string): Promise<Stream[]> {
+  try {
+    const headers = await getTwitchHeaders();
+    const params = new URLSearchParams({
+      query,
+      first: '20',
+      type: 'live'
+    });
+
+    const response = await fetch(
+      `${TWITCH_API_URL}/search/channels?${params}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return data.data.map((channel: any) => ({
+      id: channel.id,
+      userId: channel.id,
+      username: channel.broadcaster_login,
+      title: channel.title,
+      thumbnailUrl: channel.thumbnail_url.replace('{width}', '800').replace('{height}', '450'),
+      game: channel.game_name,
+      viewerCount: channel.viewer_count,
+      tags: channel.tags || []
+    }));
+  } catch (error) {
+    console.error('Error searching streams:', error);
+    throw error;
+  }
+}
+
+export async function getStreamerInfo(userId: string): Promise<StreamerInfo> {
   const headers = await getTwitchHeaders();
   const response = await fetch(`${TWITCH_API_URL}/users?id=${userId}`, { headers });
-  return response.json();
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const user = data.data[0];
+  
+  if (!user) {
+    throw new Error('Streamer not found');
+  }
+
+  return {
+    id: user.id,
+    username: user.display_name,
+    avatarUrl: user.profile_image_url,
+    isLive: false, // This will be updated by getStreamStatus
+    tags: user.tags || [],
+  };
 }
 
 export async function getStreamStatus(userId: string) {
   const headers = await getTwitchHeaders();
   const response = await fetch(`${TWITCH_API_URL}/streams?user_id=${userId}`, { headers });
-  return response.json();
-}
-
-export async function searchStreams(query: string, limit = 20): Promise<Stream[]> {
-  if (!query.trim()) return [];
-
-  try {
-    const headers = await getTwitchHeaders();
-    const url = new URL(`${TWITCH_API_URL}/search/channels`);
-    url.searchParams.append('query', query);
-    url.searchParams.append('first', limit.toString());
-    url.searchParams.append('live_only', 'true');
-
-    const response = await fetch(url.toString(), { headers });
-    if (!response.ok) {
-      throw new Error(`Failed to search streams: ${response.statusText}`);
-    }
-
-    const { data } = await response.json();
-
-    return data.map((channel: any): Stream => ({
-      id: channel.id,
-      userId: channel.id,
-      username: channel.broadcaster_login,
-      title: channel.title || channel.display_name,
-      game: channel.game_name || 'Unknown Game',
-      thumbnailUrl: channel.thumbnail_url
-        .replace('{width}', '440')
-        .replace('{height}', '248'),
-      viewerCount: channel.viewer_count || 0,
-      tags: channel.tags || [],
-    }));
-  } catch (error) {
-    console.error('Error searching streams:', error);
-    return [];
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
+
+  const data = await response.json();
+  return {
+    data: data.data,
+    isLive: data.data.length > 0,
+    viewerCount: data.data[0]?.viewer_count ?? null,
+    currentGame: data.data[0]?.game_name ?? null,
+    tags: data.data[0]?.tags ?? [],
+  };
 }

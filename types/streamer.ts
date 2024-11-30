@@ -5,6 +5,7 @@ export interface StreamerInfo {
   isLive: boolean;
   currentGame?: string | null;
   viewerCount?: number | null;
+  tags?: string[];  // Add tags property
 }
 
 export interface Stream {

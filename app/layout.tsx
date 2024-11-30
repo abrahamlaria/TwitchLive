@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SupabaseProvider } from '@/providers/supabase-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { NotificationsProvider } from '@/providers/notifications-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,8 +23,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <SupabaseProvider>
           <ThemeProvider attribute="class" defaultTheme="dark">
-            {children}
-            <Toaster />
+            <NotificationsProvider>
+              {children}
+              <Toaster />
+            </NotificationsProvider>
           </ThemeProvider>
         </SupabaseProvider>
       </body>

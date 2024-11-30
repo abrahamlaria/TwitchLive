@@ -1,22 +1,20 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSupabase } from '@/providers/supabase-provider';
 import { useAuth } from './use-auth';
-import { getStreamerInfo, getStreamStatus } from '@/lib/twitch/api';
+import { getStreamerInfo, getStreamStatus } from '@/lib/twitch';
 import type { StreamerInfo } from '@/types/streamer';
 
-// Cache for streamer data
+// Cache streamer data to reduce API calls
 const streamerCache = new Map<string, { data: StreamerInfo; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export function useFavorites() {
-  const { user } = useAuth();
-  const supabase = useSupabase();
   const [favorites, setFavorites] = useState<StreamerInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const mountedRef = useRef(true);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const supabase = useSupabase();
+  const { user, isAuthenticated } = useAuth();
 
   const fetchStreamerData = useCallback(async (streamerId: string): Promise<StreamerInfo | null> => {
     try {
@@ -31,15 +29,14 @@ export function useFavorites() {
         getStreamStatus(streamerId)
       ]);
 
-      if (!info.data?.[0]) return null;
-
       const streamerInfo: StreamerInfo = {
         id: streamerId,
-        username: info.data[0].display_name,
-        avatarUrl: info.data[0].profile_image_url,
-        isLive: status.data?.length > 0,
-        currentGame: status.data?.[0]?.game_name ?? null,
-        viewerCount: status.data?.[0]?.viewer_count ?? null,
+        username: info.username,
+        avatarUrl: info.avatarUrl,
+        isLive: status.isLive,
+        currentGame: status.currentGame,
+        viewerCount: status.viewerCount,
+        tags: info.tags || [],
       };
 
       // Update cache
@@ -55,88 +52,85 @@ export function useFavorites() {
     }
   }, []);
 
-  const fetchFavorites = useCallback(async () => {
-    if (!user || !mountedRef.current) return;
+  const loadFavorites = useCallback(async () => {
+    if (!user) {
+      setFavorites([]);
+      return;
+    }
 
     try {
+      setLoading(true);
       const { data: favoriteStreamers, error } = await supabase
         .from('favorite_streamers')
-        .select('streamer_id')
+        .select('*')
         .eq('user_id', user.id);
 
       if (error) throw error;
 
-      const streamersData = await Promise.all(
-        favoriteStreamers.map(({ streamer_id }) => fetchStreamerData(streamer_id))
-      );
-
-      if (mountedRef.current) {
-        const validStreamers = streamersData.filter((data): data is StreamerInfo => data !== null);
-        setFavorites(validStreamers);
-        setLoading(false);
-      }
+      const streamerPromises = favoriteStreamers.map(f => fetchStreamerData(f.streamer_id));
+      const streamersData = await Promise.all(streamerPromises);
+      
+      setFavorites(streamersData.filter((data): data is StreamerInfo => data !== null));
     } catch (error) {
-      console.error('Error fetching favorites:', error);
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      console.error('Error loading favorites:', error);
+      setFavorites([]);
+    } finally {
+      setLoading(false);
     }
   }, [user, supabase, fetchStreamerData]);
 
   const toggleFavorite = useCallback(async (streamerId: string) => {
     if (!user) return;
 
-    const isCurrentlyFollowing = favorites.some(f => f.id === streamerId);
-
     try {
-      if (isCurrentlyFollowing) {
-        // Optimistic update for removal
-        setFavorites(prev => prev.filter(f => f.id !== streamerId));
+      const isCurrentlyFollowing = favorites.some(f => f.id === streamerId);
 
+      if (isCurrentlyFollowing) {
+        // Remove from database
         await supabase
           .from('favorite_streamers')
           .delete()
           .eq('user_id', user.id)
           .eq('streamer_id', streamerId);
 
-        // Clear from cache
-        streamerCache.delete(streamerId);
+        // Update state
+        setFavorites(prev => prev.filter(f => f.id !== streamerId));
       } else {
-        const streamerData = await fetchStreamerData(streamerId);
-        if (!streamerData) throw new Error('Failed to fetch streamer data');
-
-        // Optimistic update for addition
-        setFavorites(prev => [...prev, streamerData]);
-
+        // Add to database
         await supabase
           .from('favorite_streamers')
-          .insert({
-            user_id: user.id,
-            streamer_id: streamerId
-          });
+          .insert({ user_id: user.id, streamer_id: streamerId });
+
+        // Fetch and add new streamer
+        const streamerInfo = await fetchStreamerData(streamerId);
+        if (streamerInfo) {
+          setFavorites(prev => [...prev, streamerInfo]);
+        }
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert optimistic update on error
-      await fetchFavorites();
     }
-  }, [user, supabase, fetchStreamerData, favorites, fetchFavorites]);
+  }, [user, supabase, favorites, fetchStreamerData]);
+
+  const isFollowing = useCallback((streamerId: string) => {
+    return favorites.some(f => f.id === streamerId);
+  }, [favorites]);
 
   useEffect(() => {
-    mountedRef.current = true;
-
-    if (!user) {
+    if (isAuthenticated) {
+      loadFavorites();
+    } else {
       setFavorites([]);
       setLoading(false);
-      return;
     }
+  }, [isAuthenticated, loadFavorites]);
 
-    // Initial fetch
-    fetchFavorites();
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user) return;
 
-    // Set up real-time subscription
     const channel = supabase
-      .channel(`favorites_${user.id}`)
+      .channel('favorite_streamers_changes')
       .on(
         'postgres_changes',
         {
@@ -145,50 +139,22 @@ export function useFavorites() {
           table: 'favorite_streamers',
           filter: `user_id=eq.${user.id}`,
         },
-        async (payload) => {
-          // Handle real-time updates immediately
-          if (payload.eventType === 'INSERT') {
-            const streamerData = await fetchStreamerData(payload.new.streamer_id);
-            if (streamerData) {
-              setFavorites(prev => [...prev, streamerData]);
-            }
-          } else if (payload.eventType === 'DELETE') {
-            setFavorites(prev => prev.filter(f => f.id !== payload.old.streamer_id));
-          }
+        () => {
+          loadFavorites();
         }
       )
       .subscribe();
 
-    channelRef.current = channel;
-
     return () => {
-      mountedRef.current = false;
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      supabase.removeChannel(channel);
     };
-  }, [user, supabase, fetchFavorites, fetchStreamerData]);
-
-  // Refresh streamer statuses periodically
-  useEffect(() => {
-    if (favorites.length === 0) return;
-
-    const interval = setInterval(() => {
-      if (mountedRef.current) {
-        fetchFavorites();
-      }
-    }, 60000); // Refresh every minute
-
-    return () => clearInterval(interval);
-  }, [favorites.length, fetchFavorites]);
+  }, [user, supabase, loadFavorites]);
 
   return {
     favorites,
     loading,
     toggleFavorite,
-    isFollowing: useCallback(
-      (streamerId: string) => favorites.some(f => f.id === streamerId),
-      [favorites]
-    ),
+    isFollowing,
+    refresh: loadFavorites,
   };
 }
