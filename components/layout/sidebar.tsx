@@ -29,7 +29,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="fixed left-0 flex h-[calc(100vh-4rem)] w-60 flex-col border-r bg-background">
+    <div className="fixed left-0 h-[calc(100vh-4rem)] w-60 flex-col border-r bg-background">
       <div className="border-b p-4">
         <h2 className="text-sm font-semibold">Following</h2>
       </div>

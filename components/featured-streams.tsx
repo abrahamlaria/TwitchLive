@@ -22,72 +22,70 @@ export function FeaturedStreams() {
   const [cursor, setCursor] = useState<string | null>(null);
 
   const loadMoreStreams = useCallback(async () => {
-    if (!hasMore || loadingMore) return;
-    
+    if (loadingMore || !hasMore) return;
+
     try {
       setLoadingMore(true);
-      const data = await getTopStreams(STREAMS_PER_PAGE, cursor);
-      
-      if (!data.streams.length || data.streams.length < STREAMS_PER_PAGE) {
-        setHasMore(false);
-      }
-      
-      setStreams(prev => [...prev, ...data.streams]);
-      setCursor(data.cursor);
+      const { streams: newStreams, cursor: newCursor } = await getTopStreams(
+        STREAMS_PER_PAGE,
+        cursor
+      );
+
+      setStreams(prev => [...prev, ...newStreams]);
+      setCursor(newCursor);
+      setHasMore(!!newCursor);
     } catch (error) {
       console.error('Failed to fetch more streams:', error);
       setError('Failed to load more streams');
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, hasMore, loadingMore]);
+  }, [cursor, loadingMore, hasMore]);
 
   const loadingRef = useInfiniteScroll(loadMoreStreams, {
     threshold: 0.5,
-    rootMargin: '100px',
-    throttleMs: 500,
-    disabled: !hasMore || loadingMore || loading,
+    disabled: !hasMore || loadingMore || loading
   });
 
   useEffect(() => {
-    const initialLoad = async () => {
+    async function loadInitialStreams() {
       try {
         setLoading(true);
-        const data = await getTopStreams(STREAMS_PER_PAGE);
-        setStreams(data.streams);
-        setCursor(data.cursor);
-        setHasMore(data.streams.length === STREAMS_PER_PAGE);
+        const { streams: initialStreams, cursor: initialCursor } = await getTopStreams(STREAMS_PER_PAGE);
+        setStreams(initialStreams);
+        setCursor(initialCursor);
+        setHasMore(!!initialCursor);
       } catch (error) {
         console.error('Failed to fetch initial streams:', error);
         setError('Failed to load streams');
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    initialLoad();
+    loadInitialStreams();
   }, []);
 
-  if (loading && streams.length === 0) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center min-h-[200px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (error && streams.length === 0) {
+  if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">{error}</p>
+      <div className="text-center text-muted-foreground py-8">
+        {error}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">Featured Streams</h2>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-4 md:space-y-6">
+      <h2 className="text-xl md:text-2xl font-bold tracking-tight">Featured Streams</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
         {streams.map((stream, index) => (
           <Card 
             key={`${stream.id}-${index}`} 
@@ -102,7 +100,7 @@ export function FeaturedStreams() {
                   fill
                   className="object-cover"
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  priority={streams.indexOf(stream) < STREAMS_PER_PAGE}
+                  priority={index < STREAMS_PER_PAGE}
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -118,13 +116,14 @@ export function FeaturedStreams() {
                 )}
               </div>
             </div>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <h3 className="font-semibold truncate">{stream.title}</h3>
               {stream.game && (
                 <p className="text-sm text-muted-foreground mt-1">{stream.game}</p>
               )}
+              {/* Only show tags on larger screens */}
               {stream.tags && stream.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="hidden md:flex flex-wrap gap-2 mt-3">
                   {stream.tags.map((tag, tagIndex) => (
                     <span
                       key={`${stream.id}-${tag}-${tagIndex}`}
@@ -140,7 +139,7 @@ export function FeaturedStreams() {
         ))}
       </div>
       {hasMore && (
-        <div ref={loadingRef} className="flex justify-center py-6">
+        <div ref={loadingRef} className="flex justify-center py-4 md:py-6">
           {loadingMore ? (
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           ) : (
