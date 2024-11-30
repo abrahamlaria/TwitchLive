@@ -10,6 +10,7 @@ export interface StreamerInfo {
 export interface Stream {
   id: string;
   userId: string;
+  username: string;
   title: string;
   thumbnailUrl: string;
   game: string;

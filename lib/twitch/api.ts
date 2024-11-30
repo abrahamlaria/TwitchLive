@@ -34,6 +34,7 @@ export async function getTopStreams(limit = 20, cursor?: string | null) {
       streams: data.map((stream: any): Stream => ({
         id: stream.id,
         userId: stream.user_id,
+        username: stream.user_login,
         title: stream.title || 'Untitled Stream',
         game: stream.game_name || 'Unknown Game',
         thumbnailUrl: stream.thumbnail_url
@@ -82,6 +83,7 @@ export async function searchStreams(query: string, limit = 20): Promise<Stream[]
     return data.map((channel: any): Stream => ({
       id: channel.id,
       userId: channel.id,
+      username: channel.broadcaster_login,
       title: channel.title || channel.display_name,
       game: channel.game_name || 'Unknown Game',
       thumbnailUrl: channel.thumbnail_url

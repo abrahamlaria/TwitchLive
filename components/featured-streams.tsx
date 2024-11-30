@@ -8,10 +8,12 @@ import { getTopStreams } from '@/lib/twitch/api';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import type { Stream } from '@/types/streamer';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 const STREAMS_PER_PAGE = 20;
 
 export function FeaturedStreams() {
+  const router = useRouter();
   const [streams, setStreams] = useState<Stream[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -87,7 +89,11 @@ export function FeaturedStreams() {
       <h2 className="text-2xl font-bold tracking-tight">Featured Streams</h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {streams.map((stream, index) => (
-          <Card key={`${stream.id}-${index}`} className="overflow-hidden">
+          <Card 
+            key={`${stream.id}-${index}`} 
+            className="overflow-hidden cursor-pointer"
+            onClick={() => router.push(`/stream/${stream.username}`)}
+          >
             <div className="aspect-video relative">
               {stream.thumbnailUrl && (
                 <Image

@@ -1,9 +1,10 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { FollowButton } from '@/components/streamer/follow-button';
 import type { Stream } from '@/types/streamer';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface SearchResultsProps {
   results: Stream[];
@@ -11,35 +12,28 @@ interface SearchResultsProps {
 }
 
 export function SearchResults({ results, onClose }: SearchResultsProps) {
-  if (results.length === 0) {
-    return (
-      <div className="p-4 text-center text-sm text-muted-foreground">
-        No streams found
-      </div>
-    );
-  }
+  const router = useRouter();
 
   return (
     <div className="grid gap-2 p-2">
       {results.map((stream) => (
         <Card
           key={stream.id}
-          className="overflow-hidden cursor-pointer hover:bg-accent"
+          className="overflow-hidden cursor-pointer hover:bg-accent transition-colors"
           onClick={() => {
-            window.open(`https://twitch.tv/${stream.title}`, '_blank');
+            router.push(`/stream/${stream.username}`);
             onClose();
           }}
         >
           <div className="flex items-center gap-4 p-3">
             <div className="relative aspect-video w-40 rounded-sm overflow-hidden flex-shrink-0">
-              {stream.thumbnailUrl && (
-                <Image
-                  src={stream.thumbnailUrl}
-                  alt={stream.title}
-                  fill
-                  className="object-cover"
-                />
-              )}
+              <Image
+                src={stream.thumbnailUrl}
+                alt={stream.title}
+                fill
+                className="object-cover"
+                sizes="160px"
+              />
               <div className="absolute bottom-1 left-1 bg-red-600 px-1 py-0.5 rounded text-[10px] font-medium text-white">
                 LIVE
               </div>
@@ -54,6 +48,18 @@ export function SearchResults({ results, onClose }: SearchResultsProps) {
               <p className="text-sm text-muted-foreground truncate">
                 {stream.game}
               </p>
+              {stream.tags && stream.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {stream.tags.slice(0, 2).map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             {stream.userId && (
               <div className="flex-shrink-0">

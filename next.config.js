@@ -5,7 +5,7 @@ const nextConfig = {
   },
   images: { 
     unoptimized: true,
-    domains: ['static-cdn.jtvnw.net']
+    domains: ['static-cdn.jtvnw.net', 'player.twitch.tv']
   }
 };
 
