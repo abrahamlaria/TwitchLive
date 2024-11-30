@@ -105,17 +105,18 @@ export function FeaturedStreams() {
                   priority={streams.indexOf(stream) < STREAMS_PER_PAGE}
                 />
               )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-3 left-3 bg-red-600 px-2 py-1 rounded text-xs font-medium text-white">
                 LIVE
               </div>
-              <div className="absolute bottom-3 right-3 bg-black/75 px-2 py-1 rounded text-xs font-medium text-white">
-                {stream.viewerCount.toLocaleString()} viewers
-              </div>
-              {stream.userId && (
-                <div className="absolute top-3 right-3">
-                  <FollowButton streamerId={stream.userId} />
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <div className="bg-black/75 px-2 py-1 rounded text-xs font-medium text-white">
+                  {stream.viewerCount.toLocaleString()} viewers
                 </div>
-              )}
+                {stream.userId && (
+                  <FollowButton streamerId={stream.userId} />
+                )}
+              </div>
             </div>
             <CardContent className="p-4">
               <h3 className="font-semibold truncate">{stream.title}</h3>
