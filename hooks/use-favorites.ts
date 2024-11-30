@@ -90,20 +90,22 @@ export function useFavorites() {
 
     try {
       if (isCurrentlyFollowing) {
-        // Immediate optimistic update for removal
+        // Optimistic update for removal
         setFavorites(prev => prev.filter(f => f.id !== streamerId));
-        streamerCache.delete(streamerId);
 
         await supabase
           .from('favorite_streamers')
           .delete()
           .eq('user_id', user.id)
           .eq('streamer_id', streamerId);
+
+        // Clear from cache
+        streamerCache.delete(streamerId);
       } else {
         const streamerData = await fetchStreamerData(streamerId);
         if (!streamerData) throw new Error('Failed to fetch streamer data');
 
-        // Immediate optimistic update for addition
+        // Optimistic update for addition
         setFavorites(prev => [...prev, streamerData]);
 
         await supabase
@@ -116,7 +118,7 @@ export function useFavorites() {
     } catch (error) {
       console.error('Error toggling favorite:', error);
       // Revert optimistic update on error
-      fetchFavorites();
+      await fetchFavorites();
     }
   }, [user, supabase, fetchStreamerData, favorites, fetchFavorites]);
 
@@ -143,9 +145,16 @@ export function useFavorites() {
           table: 'favorite_streamers',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          // Immediate update on database changes
-          fetchFavorites();
+        async (payload) => {
+          // Handle real-time updates immediately
+          if (payload.eventType === 'INSERT') {
+            const streamerData = await fetchStreamerData(payload.new.streamer_id);
+            if (streamerData) {
+              setFavorites(prev => [...prev, streamerData]);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setFavorites(prev => prev.filter(f => f.id !== payload.old.streamer_id));
+          }
         }
       )
       .subscribe();
@@ -158,7 +167,7 @@ export function useFavorites() {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [user, supabase, fetchFavorites]);
+  }, [user, supabase, fetchFavorites, fetchStreamerData]);
 
   // Refresh streamer statuses periodically
   useEffect(() => {
