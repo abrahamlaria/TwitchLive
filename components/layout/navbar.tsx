@@ -1,12 +1,12 @@
 "use client";
 
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LoginButton } from "@/components/auth/login-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { SearchCommand } from "@/components/search/search-command";
 
 export function Navbar() {
   const { isAuthenticated } = useAuth();
@@ -24,14 +24,7 @@ export function Navbar() {
         </div>
         <div className="flex flex-1 items-center justify-end gap-4 md:justify-between">
           <div className="hidden w-full max-w-xl md:block">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search streams..."
-                className="pl-8"
-              />
-            </div>
+            <SearchCommand />
           </div>
           <div className="flex items-center gap-4">
             {isAuthenticated && (

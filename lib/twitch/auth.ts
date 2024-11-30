@@ -1,6 +1,3 @@
-import { TWITCH_AUTH_URL } from './config';
-import { getTwitchCredentials } from './config';
-
 let appAccessToken: string | null = null;
 let tokenExpiresAt: number | null = null;
 
@@ -10,33 +7,15 @@ export async function getAppAccessToken() {
     return appAccessToken;
   }
 
-  const { clientId, clientSecret, hasCredentials } = getTwitchCredentials();
-
-  if (!hasCredentials) {
-    throw new Error('Missing Twitch API credentials');
-  }
-
   try {
-    const response = await fetch(TWITCH_AUTH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: clientId!,
-        client_secret: clientSecret!,
-        grant_type: 'client_credentials'
-      })
-    });
-
+    const response = await fetch('/api/twitch/auth');
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get access token: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error('Failed to get access token');
     }
 
     const data = await response.json();
     appAccessToken = data.access_token;
-    tokenExpiresAt = Date.now() + (data.expires_in * 1000);
+    tokenExpiresAt = Date.now() + (3600 * 1000); // 1 hour expiration
     return appAccessToken;
   } catch (error) {
     console.error('Error getting Twitch app access token:', error);
