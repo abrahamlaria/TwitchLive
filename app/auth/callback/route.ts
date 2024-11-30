@@ -15,11 +15,10 @@ export async function GET(request: Request) {
       await supabase.auth.exchangeCodeForSession(code);
     }
 
-    // Redirect to the home page after successful authentication
-    return NextResponse.redirect(new URL('/', requestUrl.origin));
+    // Redirect to the dashboard after successful authentication
+    return NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
   } catch (error) {
     console.error('Auth callback error:', error);
-    // Redirect to home page with error parameter
     return NextResponse.redirect(new URL('/?error=auth_callback_error', request.url));
   }
 }

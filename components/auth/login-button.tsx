@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,17 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface LoginButtonProps {
   children?: React.ReactNode;
+  mode?: 'modal' | 'default';
 }
 
-export function LoginButton({ children }: LoginButtonProps) {
+export function LoginButton({ children, mode = 'default' }: LoginButtonProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,22 +33,7 @@ export function LoginButton({ children }: LoginButtonProps) {
     message: string | null;
   }>({ type: null, message: null });
   const supabase = useSupabase();
-
-  useEffect(() => {
-    if (status.type === 'success') {
-      const timer = setTimeout(() => {
-        setIsClosing(true);
-        setTimeout(() => {
-          setOpen(false);
-          setIsClosing(false);
-          setEmail('');
-          setPassword('');
-          setStatus({ type: null, message: null });
-        }, 500);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [status]);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +55,18 @@ export function LoginButton({ children }: LoginButtonProps) {
           type: 'success',
           message: 'Check your email for the confirmation link.',
         });
+
+        // Show success message for 3 seconds before closing
+        setTimeout(() => {
+          setIsClosing(true);
+          setTimeout(() => {
+            setOpen(false);
+            setIsClosing(false);
+            setEmail('');
+            setPassword('');
+            setStatus({ type: null, message: null });
+          }, 500);
+        }, 3000);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -76,7 +74,10 @@ export function LoginButton({ children }: LoginButtonProps) {
         });
         
         if (error) throw error;
+        
+        // Immediately close dialog and redirect to dashboard
         setOpen(false);
+        router.push('/dashboard');
       }
     } catch (error: any) {
       setStatus({
@@ -93,13 +94,16 @@ export function LoginButton({ children }: LoginButtonProps) {
       setEmail('');
       setPassword('');
       setStatus({ type: null, message: null });
+      setIsSignUp(false);
     }
   };
+
+  const trigger = children || <Button>Sign In</Button>;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        {children || <Button>Sign In</Button>}
+        {trigger}
       </DialogTrigger>
       <DialogContent className={cn(
         "sm:max-w-[425px] transition-all duration-500",
@@ -107,11 +111,6 @@ export function LoginButton({ children }: LoginButtonProps) {
       )}>
         <DialogHeader>
           <DialogTitle>{isSignUp ? 'Create Account' : 'Sign In'}</DialogTitle>
-          {isSignUp && (
-            <DialogDescription>
-              Create an account to follow your favorite streamers.
-            </DialogDescription>
-          )}
         </DialogHeader>
         {status.type && (
           <Alert 

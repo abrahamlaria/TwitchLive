@@ -10,18 +10,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Settings, User } from "lucide-react";
 import { useSupabase } from "@/providers/supabase-provider";
+import { useRouter } from 'next/navigation';
 
 export function UserMenu() {
   const { user } = useAuth();
   const supabase = useSupabase();
+  const router = useRouter();
 
   if (!user?.email) return null;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    router.push('/');
   };
 
   const initials = user.email

@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Menu, LayoutDashboard } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LoginButton } from '@/components/auth/login-button';
@@ -8,12 +8,10 @@ import { UserMenu } from '@/components/auth/user-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { SearchCommand } from '@/components/search/search-command';
 import { useNotificationIndicator } from '@/hooks/use-notification-indicator';
-import { useRouter } from 'next/navigation';
 
 export function Navbar() {
   const { isAuthenticated } = useAuth();
   const { hasNotification } = useNotificationIndicator();
-  const router = useRouter();
 
   return (
     <nav className="fixed top-0 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -32,24 +30,14 @@ export function Navbar() {
           </div>
           <div className="flex items-center gap-4">
             {isAuthenticated && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => router.push('/dashboard')}
-                  className="hidden md:flex"
-                >
-                  <LayoutDashboard className="h-5 w-5" />
+              <div className="relative">
+                <Button variant="ghost" size="icon">
+                  <Bell className="h-5 w-5" />
+                  {hasNotification && (
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                  )}
                 </Button>
-                <div className="relative">
-                  <Button variant="ghost" size="icon">
-                    <Bell className="h-5 w-5" />
-                    {hasNotification && (
-                      <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-                    )}
-                  </Button>
-                </div>
-              </>
+              </div>
             )}
             <ThemeToggle />
             {isAuthenticated ? <UserMenu /> : <LoginButton />}
