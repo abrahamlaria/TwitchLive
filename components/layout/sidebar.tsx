@@ -29,11 +29,11 @@ export function Sidebar() {
   }
 
   return (
-    <div className="fixed left-0 h-[calc(100vh-4rem)] w-60 flex-col border-r bg-background">
+    <div className="fixed left-0 flex h-[calc(100vh-4rem)] w-60 flex-col border-r bg-background">
       <div className="border-b p-4">
         <h2 className="text-sm font-semibold">Following</h2>
       </div>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 h-[calc(100vh-8rem)]"> {/* Updated height calculation */}
         <div className="p-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
