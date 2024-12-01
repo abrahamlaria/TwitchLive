@@ -1,17 +1,16 @@
 'use client';
 
-import { Bell, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LoginButton } from '@/components/auth/login-button';
 import { UserMenu } from '@/components/auth/user-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { SearchCommand } from '@/components/search/search-command';
-import { useNotificationIndicator } from '@/hooks/use-notification-indicator';
+import { NotificationPanel } from '@/components/notifications/notification-panel';
 
 export function Navbar() {
   const { isAuthenticated } = useAuth();
-  const { hasNotification } = useNotificationIndicator();
 
   return (
     <nav className="fixed top-0 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,16 +28,7 @@ export function Navbar() {
             <SearchCommand />
           </div>
           <div className="flex items-center gap-4">
-            {isAuthenticated && (
-              <div className="relative">
-                <Button variant="ghost" size="icon">
-                  <Bell className="h-5 w-5" />
-                  {hasNotification && (
-                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-                  )}
-                </Button>
-              </div>
-            )}
+            {isAuthenticated && <NotificationPanel />}
             <ThemeToggle />
             {isAuthenticated ? <UserMenu /> : <LoginButton />}
           </div>
