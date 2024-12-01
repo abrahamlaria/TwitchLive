@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Settings, User } from "lucide-react";
+import { BarChart, LogOut, Settings, User } from "lucide-react";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useRouter } from 'next/navigation';
 
@@ -50,6 +50,10 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push('/dashboard/analytics')}>
+          <BarChart className="mr-2 h-4 w-4" />
+          <span>Analytics</span>
+        </DropdownMenuItem>
         <DropdownMenuItem>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
