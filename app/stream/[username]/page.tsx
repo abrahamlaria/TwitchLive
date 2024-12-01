@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { LoginButton } from '@/components/auth/login-button';
+import { useAnalyticsCollector } from '@/hooks/use-analytics-collector';
+import { getStreamerInfo } from '@/lib/twitch';
 
 interface StreamPageProps {
   params: {
@@ -21,6 +23,22 @@ export default function StreamPage({ params }: StreamPageProps) {
   const [loading, setLoading] = useState(true);
   const [parentDomain, setParentDomain] = useState<string>('');
   const { username } = params;
+  const { startWatching, stopWatching } = useAnalyticsCollector();
+  const [streamerId, setStreamerId] = useState<string | null>(null);
+
+  // Fetch streamer ID on mount
+  useEffect(() => {
+    const fetchStreamerId = async () => {
+      try {
+        const streamerInfo = await getStreamerInfo(username);
+        setStreamerId(streamerInfo.id);
+      } catch (error) {
+        console.error('Error fetching streamer info:', error);
+      }
+    };
+
+    fetchStreamerId();
+  }, [username]);
 
   useEffect(() => {
     // Get the parent domain for the Twitch player
@@ -33,6 +51,16 @@ export default function StreamPage({ params }: StreamPageProps) {
     const timer = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Start tracking when the stream is loaded and we have the streamer ID
+  useEffect(() => {
+    if (!loading && isAuthenticated && streamerId) {
+      startWatching(streamerId);
+      return () => {
+        stopWatching(streamerId);
+      };
+    }
+  }, [loading, isAuthenticated, streamerId, startWatching, stopWatching]);
 
   return (
     <div className="min-h-screen bg-background">
