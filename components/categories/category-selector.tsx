@@ -69,9 +69,12 @@ export function CategorySelector({
   }, [loadCategories]);
 
   // Handle tab change
-  const handleTabChange = useCallback((value: CategoryType) => {
-    onTabChange(value);
-    loadCategories(value);
+  const handleTabChange = useCallback((value: string) => {
+    // Validate that the value is a valid CategoryType before calling onTabChange
+    if (value === 'games' || value === 'irl' || value === 'music' || value === 'creative' || value === 'sports') {
+      onTabChange(value);
+      loadCategories(value);
+    }
   }, [loadCategories, onTabChange]);
 
   // Handle category selection
