@@ -6,13 +6,13 @@ import { useFavorites } from './use-favorites';
 import { useToast } from './use-toast';
 
 export function useNotifications() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { favorites } = useFavorites();
   const { toast } = useToast();
   const previousStatusRef = useRef<Map<string, boolean>>(new Map());
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     // Initialize previous status on first load
     favorites.forEach((streamer) => {
@@ -22,19 +22,64 @@ export function useNotifications() {
     });
 
     // Check for status changes
-    favorites.forEach((streamer) => {
+    favorites.forEach(async (streamer) => {
       const wasLive = previousStatusRef.current.get(streamer.id);
       
-      // Only notify if we have a previous state and it changed to live
-      if (wasLive !== undefined && !wasLive && streamer.isLive) {
-        toast({
-          title: `${streamer.username} is now live!`,
-          description: streamer.currentGame 
+      // Only notify if we have a previous state and it changed
+      if (wasLive !== undefined) {
+        if (!wasLive && streamer.isLive) {
+          // Streamer went live
+          const title = `${streamer.username} is now live!`;
+          const message = streamer.currentGame 
             ? `Playing ${streamer.currentGame}`
-            : 'Started streaming',
-          variant: 'default',
-          className: 'bg-background border-yellow-500 dark:border-yellow-500',
-        });
+            : 'Started streaming';
+
+          // Show toast notification
+          toast({
+            title,
+            description: message,
+            variant: 'default',
+            className: 'bg-background border-yellow-500 dark:border-yellow-500',
+          });
+
+          // Store notification in database
+          try {
+            await fetch('/api/notifications', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                title,
+                message,
+                type: 'stream_live',
+                streamerId: streamer.id,
+                streamerUsername: streamer.username,
+              }),
+            });
+          } catch (error) {
+            console.error('Error storing notification:', error);
+          }
+        } else if (wasLive && !streamer.isLive) {
+          // Streamer went offline
+          try {
+            await fetch('/api/notifications', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                title: `${streamer.username} went offline`,
+                message: 'Stream ended',
+                type: 'stream_offline',
+                streamerId: streamer.id,
+                streamerUsername: streamer.username,
+              }),
+            });
+          } catch (error) {
+            console.error('Error storing notification:', error);
+          }
+        }
       }
 
       // Update previous status
@@ -48,5 +93,5 @@ export function useNotifications() {
           previousStatusRef.current.delete(id);
         }
       });
-  }, [isAuthenticated, favorites, toast]);
+  }, [isAuthenticated, user, favorites, toast]);
 }
