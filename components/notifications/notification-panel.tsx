@@ -25,6 +25,20 @@ export function NotificationPanel() {
   } = useNotificationPanel();
   const router = useRouter();
 
+  const formatDate = (dateString: string) => {
+    try {
+      // Parse the ISO date string and format it
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date');
+      }
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'recently'; // Fallback text
+    }
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -86,7 +100,7 @@ export function NotificationPanel() {
                       {notification.message}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      {formatDate(notification.createdAt)}
                     </p>
                   </div>
                   <Button
